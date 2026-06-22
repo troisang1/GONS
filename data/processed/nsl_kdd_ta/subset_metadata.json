@@ -1,0 +1,61 @@
+{
+  "cap_per_class": 10000,
+  "classes": [
+    "apache2",
+    "back",
+    "guess_passwd",
+    "ipsweep",
+    "mscan",
+    "neptune",
+    "nmap",
+    "normal",
+    "portsweep",
+    "processtable",
+    "satan",
+    "smurf",
+    "teardrop",
+    "warezclient",
+    "warezmaster"
+  ],
+  "dropped_classes_below_min": [
+    "buffer_overflow",
+    "httptunnel",
+    "mailbomb",
+    "pod",
+    "saint",
+    "snmpgetattack",
+    "snmpguess"
+  ],
+  "min_class": 30,
+  "n_classes": 15,
+  "n_features": 122,
+  "name": "nsl_kdd",
+  "per_class_train": {
+    "apache2": 22,
+    "back": 39,
+    "guess_passwd": 38,
+    "ipsweep": 112,
+    "mscan": 29,
+    "neptune": 1376,
+    "nmap": 47,
+    "normal": 2311,
+    "portsweep": 92,
+    "processtable": 21,
+    "satan": 131,
+    "smurf": 99,
+    "teardrop": 27,
+    "warezclient": 26,
+    "warezmaster": 29
+  },
+  "ratios": {
+    "cal": 0.2,
+    "test": 0.2,
+    "train": 0.6
+  },
+  "rows": {
+    "cal": 1466,
+    "test": 1467,
+    "train": 4399
+  },
+  "seed": 42
+}

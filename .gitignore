@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual env / tooling
+.venv/
+.uv-cache/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# Run outputs
+artifacts/runs/
+artifacts/reports/
+experiments/
+/tmp/
+
+# OS
+.DS_Store

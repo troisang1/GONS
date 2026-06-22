@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling>=1.25,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gons"
+version = "1.0.0"
+description = "GONS (Geometric Open-set Null Space) — gate-OFF reproduction package for the open-set FSCIL main result + ablation."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
+authors = [
+  { name = "GONS authors" },
+]
+# Non-deep dependencies ONLY. No torch / no GPU. CPU-only, classical ML stack.
+dependencies = [
+  "numpy>=1.26,<3",
+  "pandas>=2.2,<3",
+  "scikit-learn>=1.5,<2",
+  "scipy>=1.13,<2",
+  "pydantic>=2.8,<3",
+  "pyyaml>=6.0,<7",
+  "rich>=13.7,<14",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3,<9",
+  "ruff>=0.6,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bcmrnfst"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "SIM", "UP"]
