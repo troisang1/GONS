@@ -1,4 +1,4 @@
-"""GONS release unit tests: gate-OFF invariant, scorer properties, parity.
+"""GONS release unit tests: config invariants, scorer properties, parity.
 
 Run: `pytest -q` from the repo root.
 """
@@ -15,31 +15,21 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))  # gons_configs / gons_run live at repo root
 sys.path.insert(0, str(REPO / "src"))
 
-from bcmrnfst.evaluation.aggregate_openset import open_set_session_metrics  # noqa: E402
+from gons.evaluation.aggregate_openset import open_set_session_metrics  # noqa: E402
 from gons_configs import (  # noqa: E402
     GONS_TUNED_PER_DS,
     dataset_available,
-    gate_active,
     make_gons_cfg,
     make_gons_tuned_cfg,
 )
 
 
 # --------------------------------------------------------------------------- #
-# Gate-OFF invariant (the GONS red line).                                     #
+# Config invariants.                                                          #
 # --------------------------------------------------------------------------- #
-def test_fixed_cfg_gate_off():
-    cfg = make_gons_cfg("nbaiot", 42, tag="t")
-    m = cfg["model"]
-    assert m["enable_dvmad_gate"] is False
-    assert m["enable_ewm"] is False
-    assert gate_active(m) is False
-
-
 @pytest.mark.parametrize("ds", list(GONS_TUNED_PER_DS))
-def test_tuned_cfg_gate_off(ds):
+def test_tuned_cfg_scoring_mode(ds):
     cfg = make_gons_tuned_cfg(ds, 42, tag="t")
-    assert gate_active(cfg["model"]) is False
     assert cfg["model"]["scoring_mode"] == "min_distance"
 
 
@@ -103,7 +93,6 @@ def test_parity_nbaiot_fixed_s42():
     cfg = make_gons_cfg("nbaiot", 42, tag="parity_nbaiot_s42")
     r = run_gons_cfg(cfg, tag="parity_nbaiot_s42")
     assert r["status"] == "ok"
-    assert r["gate_active"] is False
     # canonical: os_hm=0.7029 ccr=0.7152 tur=0.7127
     assert r["os_hm"] == pytest.approx(0.7029, abs=2e-3)
     assert r["ccr"] == pytest.approx(0.7152, abs=2e-3)

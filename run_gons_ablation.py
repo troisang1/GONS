@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""GONS 4-component ablation (GONS gate-OFF, per-dataset TUNED config).
+"""GONS 4-component ablation (per-dataset TUNED config).
 
 Ablates the GONS FULL (per-dataset tuned, min-distance scoring, refresh ON,
 capacity 512) config one component at a time across seeds 42..51, scoring each
@@ -68,7 +68,7 @@ def main() -> int:
     skipped = [d for d in a.datasets if not dataset_available(d)]
     if skipped:
         print(f"[skip] datasets not found under data/processed/: {skipped}")
-    print(f"GONS ablation: datasets={available} arms={ARMS} seeds={a.seeds} (gate-OFF)\n")
+    print(f"GONS ablation: datasets={available} arms={ARMS} seeds={a.seeds}\n")
 
     rows: list[dict] = []
     for ds in available:
@@ -100,7 +100,7 @@ def _arm_mean(rows: list[dict], ds: str, arm: str) -> float | None:
 
 def _summary(rows: list[dict], datasets: list[str]) -> None:
     print(f"\n{'='*70}")
-    print("GONS ABLATION — Delta OS-HM vs FULL (positive = component helps), gate-OFF")
+    print("GONS ABLATION — Delta OS-HM vs FULL (positive = component helps)")
     print(f"{'='*70}")
     # per-dataset table
     print(f"{'Dataset':<12} {'FULL':>8}  " + "  ".join(f"{a:>12}" for a in ARMS[1:]))

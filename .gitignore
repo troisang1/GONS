@@ -14,8 +14,7 @@ dist/
 .mypy_cache/
 
 # Run outputs
-artifacts/runs/
-artifacts/reports/
+artifacts/
 experiments/
 /tmp/
 

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "gons"
 version = "1.0.0"
-description = "GONS (Geometric Open-set Null Space) — gate-OFF reproduction package for the open-set FSCIL main result + ablation."
+description = "GONS (Geometric Open-set Null Space) — reproduction package for the open-set FSCIL main result + ablation."
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 license = { text = "MIT" }
@@ -30,7 +30,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/bcmrnfst"]
+packages = ["src/gons"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

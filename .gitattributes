@@ -1,0 +1,36 @@
+# Force binary handling: never apply text/EOL (CRLF<->LF) conversion to these.
+# Prevents cross-machine corruption of binary assets on commit/checkout.
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.npz   binary
+*.npy   binary
+*.pkl   binary
+*.pt    binary
+*.pth   binary
+*.zip   binary
+*.gz    binary
+*.tar   binary
+*.xlsx  binary
+*.xls   binary
+*.pptx  binary
+*.docx  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.mp4   binary
+*.so    binary
+
+# Normalize source text to LF in the repo (consistent across machines).
+*.tex   text eol=lf
+*.bib   text eol=lf
+*.md    text eol=lf
+*.py    text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.json  text eol=lf
+*.csv   text eol=lf

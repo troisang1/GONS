@@ -1,0 +1,6 @@
+dataset,bwt_mean,bwt_std,n_seeds
+ToN-IoT,-0.0143,0.0251,10
+N-BaIoT,-0.0645,0.0598,10
+CICIDS2018,-0.0312,0.0266,10
+5G-NIDD,-0.0347,0.0784,10
+NSL-KDD,-0.1383,0.1185,10

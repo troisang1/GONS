@@ -1,0 +1,35 @@
+name: dataset
+version: v1
+description: >
+  Generic dataset schema for the GONS open-set FSCIL evaluation: the label
+  column, accepted label-column aliases, and the preprocessing options shared
+  across the benchmark datasets. Per-dataset train/calibration/test paths are
+  supplied by the runner, not here.
+raw_root: data/raw
+manifest_root: data/manifests
+default_subset: default
+label_column: label
+label_aliases:
+  - Label
+  - label
+  - attack_type
+drop_columns: []
+numeric_overrides: []
+categorical_overrides: []
+subsets:
+  - name: default
+    description: >
+      Default class-balanced subset used for the FSCIL evaluation.
+    manifest: data/manifests/default.yaml
+    preferred_sources:
+      - processed
+layout:
+  processed_dir: processed
+  train_test_dir: train_test
+  metadata_dir: metadata
+  description_files: []
+preprocessing:
+  bound_categorical_cardinality: false
+  ohe_min_frequency: 2
+  ohe_max_categories: 1000000000
+  d_input_max: 1000000000

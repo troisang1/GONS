@@ -1,0 +1,39 @@
+# GENERATED config record (do not hand-edit). Authoritative source:
+# gons_configs.py -> make_gons_tuned_cfg (per-dataset TUNED grid cell). Reproduce via run_gons_main.py / run_gons_ablation.py.
+task: fscil
+experiment_name: tuned_nbaiot_s42
+method: gons
+dataset_config_path: configs/data/dataset.yaml
+train_path: data/processed/nbaiot_5k/train.csv
+calibration_path: data/processed/nbaiot_5k/calibration.csv
+test_path: data/processed/nbaiot_5k/test.csv
+output_root: artifacts/runs
+base_class_ratio: 0.5
+base_class_seed: 42
+novel_class_order: sorted
+novel_support_fraction: 1.0
+novel_support_max_k: 5
+refresh_after_session: true
+model:
+  label_column: label
+  seed: 42
+  map_kind: rff
+  map_kernel: rbf
+  map_gamma: -1.0
+  map_n_components: 512
+  d_proj_max: 32
+  residual_handling: drop
+  energy_temperature: 1.0
+  enable_contrastive_rff: false
+  score_support_penalty_alpha: 0.0
+  score_support_penalty: false
+  score_support_penalty_fn: log
+  enable_ncdr_classification: false
+  ncdr_threshold: 0.85
+  threshold_quantile: 0.85
+  scoring_mode: min_distance
+  refresh_mode: single_pass
+  enable_local_affine_screen: false
+  support_trim_strategy: uniform
+  preprocessing:
+    numeric_scaler: quantile

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""GONS main result — 5 datasets x 10 seeds, OS-HM (GONS gate-OFF only).
+"""GONS main result — 5 datasets x 10 seeds, OS-HM.
 
-Runs the GONS FIXED config (one global config, gate-OFF) on every available
+Runs the GONS FIXED config (one global config) on every available
 dataset across seeds 42..51, scores each run through the official OS-HM scorer,
 and prints a per-dataset mean +/- std table. Resumable: rows already in the
 output jsonl are skipped.
@@ -54,7 +54,7 @@ def main() -> int:
     if skipped:
         print(f"[skip] datasets not found under data/processed/: {skipped}")
         print("       (see data/README.md to prepare ToN-IoT / CICIDS2018 / 5G-NIDD)")
-    print(f"GONS main result: datasets={available} seeds={a.seeds} (gate-OFF)\n")
+    print(f"GONS main result: datasets={available} seeds={a.seeds}\n")
 
     rows: list[dict] = []
     for ds in available:
@@ -79,7 +79,7 @@ def main() -> int:
 
 def _summary(rows: list[dict], datasets: list[str]) -> None:
     print(f"\n{'='*78}")
-    print("GONS MAIN RESULT — OS-HM (mean +/- std over seeds), gate-OFF")
+    print("GONS MAIN RESULT — OS-HM (mean +/- std over seeds)")
     print(f"{'='*78}")
     print(f"{'Dataset':<12} {'n':>3}  " + "  ".join(f"{c:>16}" for c in METRIC_COLS))
     print("-" * 78)

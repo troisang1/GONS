@@ -1,10 +1,10 @@
-"""GONS (gate-OFF) config builders for the reproduction runners.
+"""GONS config builders for the reproduction runners.
 
 Single source of truth for the GONS FIXED config used in the main result and as
-the FULL base of the ablation. Builds the canonical GONS config with the gate
-HARD-OFF (gate-OFF invariant) and the global FIXED grid cell baked in.
+the FULL base of the ablation. Builds the canonical GONS config with the global
+FIXED grid cell baked in.
 
-GONS FIXED grid cell (argmax of the per-dataset-mean OS-HM sweep, global_gi=4):
+GONS FIXED grid cell (argmax of the per-dataset-mean OS-HM sweep):
     threshold_quantile = 0.85
     enable_contrastive_rff = False
     score_support_penalty_alpha = 0.0
@@ -87,7 +87,7 @@ GONS_TUNED_PER_DS: dict[str, dict] = {
                 "score_support_penalty_alpha": 0.20, "enable_ncdr_classification": True},
 }
 
-DATA_CONFIG_PATH = "configs/data/ciciot2023.yaml"
+DATA_CONFIG_PATH = "configs/data/dataset.yaml"
 
 
 def dataset_available(ds_name: str) -> bool:
@@ -96,7 +96,7 @@ def dataset_available(ds_name: str) -> bool:
 
 
 def make_gons_cfg(ds_name: str, seed: int, tag: str, overrides: dict | None = None) -> dict:
-    """Build a GONS (gate-OFF) track_a_fscil config for one (dataset, seed).
+    """Build a GONS FSCIL config for one (dataset, seed).
 
     `overrides` (used by the ablation) mutates the model dict AFTER the FIXED
     config is applied — e.g. {"scoring_mode": "energy"} or {"map_n_components": 128}.
@@ -126,15 +126,11 @@ def make_gons_cfg(ds_name: str, seed: int, tag: str, overrides: dict | None = No
         "enable_local_affine_screen": False,
         "support_trim_strategy": "uniform",
         "preprocessing": {"numeric_scaler": "quantile"},
-        # ---- HARD gate-OFF: the GONS invariant ----
-        "enable_dvmad_gate": False,
-        "enable_ewm": False,
-        "ewm_replace_gate": False,
     }
     cfg = {
-        "task": "track_a_fscil",
+        "task": "fscil",
         "experiment_name": tag,
-        "method": "bc_mrnfst",
+        "method": "gons",
         "dataset_config_path": DATA_CONFIG_PATH,
         "train_path": ds["train"],
         "calibration_path": ds["cal"],
@@ -157,7 +153,7 @@ def make_gons_cfg(ds_name: str, seed: int, tag: str, overrides: dict | None = No
 
 
 def make_gons_tuned_cfg(ds_name: str, seed: int, tag: str, overrides: dict | None = None) -> dict:
-    """GONS per-dataset TUNED config (gate-OFF) — the FULL base of the ablation."""
+    """GONS per-dataset TUNED config — the FULL base of the ablation."""
 
     cfg = make_gons_cfg(ds_name, seed, tag=tag)
     tuned = GONS_TUNED_PER_DS[ds_name]
@@ -173,7 +169,3 @@ def make_gons_tuned_cfg(ds_name: str, seed: int, tag: str, overrides: dict | Non
             cfg["refresh_after_session"] = overrides.pop("refresh_after_session")
         m.update(overrides)
     return cfg
-
-
-def gate_active(model: dict) -> bool:
-    return bool(model.get("enable_dvmad_gate")) and bool(model.get("enable_ewm"))

@@ -23,21 +23,36 @@ processed splits are larger:
 | CICIDS2018 (`cicids2018`) | CSE-CIC-IDS2018 — https://www.unb.ca/cic/datasets/ids-2018.html |
 | 5G-NIDD (`5g_nidd`) | 5G-NIDD — https://ieee-dataport.org/documents/5g-nidd-comprehensive-network-intrusion-detection-dataset-generated-over-5g-wireless |
 
-### Preparation recipe
+### Preparation recipe — `prepare_dataset.py` (turnkey)
 
-For each dataset we produce a balanced, category-level processed subset and split
-it per class into train / calibration / test:
+The bundled splits were produced by a single deterministic recipe, shipped as
+`prepare_dataset.py` at the repo root. Point it at a raw labeled CSV (one label
+column + numeric feature columns) and it writes the exact `train.csv` /
+`calibration.csv` / `test.csv` the runner reads:
 
-1. **Label** at the category level (benign + attack categories); normalize label
-   strings to lowercase.
-2. **Subsample** per class (the bundled subsets use ~5k rows/class cap for the
-   IDS datasets; ToN-IoT uses the 10k-per-class balanced subset).
-3. **Split** per class: train / calibration / test (the runner reads three CSVs).
-4. Write `train.csv`, `calibration.csv`, `test.csv` under
-   `data/processed/<name>/` matching the paths in `gons_configs.py` (`DATASETS`).
+```bash
+# ToN-IoT: 10000/class cap
+uv run python prepare_dataset.py --input raw/toniot.csv  --name toniot     --cap 10000
+# Other IDS datasets: 5000/class cap
+uv run python prepare_dataset.py --input raw/cicids.csv  --name cicids2018 --cap 5000
+uv run python prepare_dataset.py --input raw/5gnidd.csv  --name 5g_nidd    --cap 5000
+```
 
-Then run `python run_gons_main.py` — datasets whose `train.csv` is present are
-included automatically; missing ones are skipped with a message.
+What the recipe does (deterministic, seed 42): normalize labels to lowercase
+(`-`/space → `_`); per class take `min(cap, available)` rows (sampled without
+replacement, then shuffled); split each class **60 / 20 / 20** into
+train / calibration / test. The output `--name` must match the `data/processed/<name>/`
+path in `gons_configs.py` (`DATASETS`).
+
+Then run `uv run python run_gons_main.py` — datasets whose `train.csv` is present
+are included automatically; missing ones are skipped with a message.
+
+> **Note on exact reproduction.** Re-prepared splits may differ *slightly* from the
+> bundled ones. The public datasets are periodically re-released and several are
+> available from more than one source/version, so the raw row set you download can
+> differ from the one used here. Preparation is otherwise fully deterministic (fixed
+> seed 42, fixed 60/20/20 split), so results reproduce up to this data-source
+> variation — expect small per-cell deltas, not different conclusions.
 
 > The exact per-class caps, seeds, and label maps used for the paper's numbers
 > are documented in the paper's experimental appendix. The bundled `nbaiot_5k`
