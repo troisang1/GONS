@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """GONS smoke test — fast single (dataset, seed) end-to-end fit + OS-HM assert.
 
-Runs GONS on N-BaIoT seed 42 through the full FSCIL
-protocol and asserts a valid OS-HM in the expected neighborhood (~0.77).
-If this passes, the import closure, data wiring, and official scorer all work.
+Runs GONS on N-BaIoT seed 42 through the full FSCIL protocol and asserts the
+reference OS-HM of 0.6565. If this passes, the import closure, data wiring,
+bandwidth rule, eigensolver path and official scorer are all correct.
 
 Usage:
     python smoke_test.py
@@ -18,8 +18,11 @@ from gons_run import run_gons_cfg
 
 DATASET = "nbaiot"
 SEED = 42
-# generous band: the headline expectation is ~0.77; we just assert "valid + sane".
-OS_HM_LOW, OS_HM_HIGH = 0.55, 0.95
+# Tight band around the reference value: a wide "is it sane" range would accept a
+# run whose bandwidth or eigensolver path is wrong.
+OS_HM_REF = 0.6565
+OS_HM_TOL = 0.002
+OS_HM_LOW, OS_HM_HIGH = OS_HM_REF - OS_HM_TOL, OS_HM_REF + OS_HM_TOL
 
 
 def main() -> int:

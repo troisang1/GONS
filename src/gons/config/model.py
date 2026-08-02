@@ -50,7 +50,10 @@ class GONSConfig(BaseModel):
     projection_mode: Literal[
         "null_space", "pca", "random"
     ] = "null_space"
-    n_dense_max: PositiveInt = 256
+    # Kept above `map_n_components` (512 in the deployed config) so the projection
+    # solve takes the exact dense path rather than iterative ARPACK. At this scale
+    # the dense path is both exact and faster (0.009 s vs 2.3 s per call).
+    n_dense_max: PositiveInt = 1024
     small_eig_solver: SmallEigSolver = "ladder"
     use_shift_invert_small: bool = False
     eig_tol: float = 1e-7

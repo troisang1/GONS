@@ -93,7 +93,7 @@ def test_parity_nbaiot_fixed_s42():
     cfg = make_gons_cfg("nbaiot", 42, tag="parity_nbaiot_s42")
     r = run_gons_cfg(cfg, tag="parity_nbaiot_s42")
     assert r["status"] == "ok"
-    # canonical: os_hm=0.7029 ccr=0.7152 tur=0.7127
-    assert r["os_hm"] == pytest.approx(0.7029, abs=2e-3)
-    assert r["ccr"] == pytest.approx(0.7152, abs=2e-3)
-    assert r["tur"] == pytest.approx(0.7127, abs=2e-3)
+    # Reference cell: os_hm=0.6565 ccr=0.6197 tur=0.7191.
+    assert r["os_hm"] == pytest.approx(0.6565, abs=2e-3)
+    assert r["ccr"] == pytest.approx(0.6197, abs=2e-3)
+    assert r["tur"] == pytest.approx(0.7191, abs=2e-3)

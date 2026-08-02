@@ -8,8 +8,8 @@ reject rule. It runs on **CPU only** in seconds-to-minutes per dataset.
 This repo contains the GONS method in isolation so it can be audited end-to-end.
 The competing baselines' **code** is not bundled (this package ships GONS only),
 but every baseline's **per-dataset result array** is bundled under `results/`
-(e.g. `results_oshm_matrix_5ds.csv` carries EWC-NCM, NC-FSCIL, OpenMax, MSP, DOC,
-BiC, RFS, and IKNDA, tuned and default), so every number in the paper's tables is
+(e.g. `results/oshm_matrix_7ds.csv` carries EWC-NCM, NC-FSCIL, OpenMax, MSP, DOC,
+BiC and RFS, each per-dataset tuned), so every number in the paper's tables is
 checkable against a shipped CSV.
 
 > ### 📄 Full proofs → `paper/supplementary.pdf`
@@ -28,8 +28,8 @@ checkable against a shipped CSV.
 
 | Artifact | Script | What it produces |
 |---|---|---|
-| **Smoke test** | `uv run python smoke_test.py` | One fast GONS fit (N-BaIoT, seed 42) end-to-end; asserts a valid OS-HM (seed-42 single-run = **0.7029**; the 10-seed N-BaIoT mean is 0.770). |
-| **Main result** | `uv run python run_gons_main.py` | GONS, 5 datasets × 10 seeds, headline **OS-HM** + per-dataset table. |
+| **Smoke test** | `uv run python smoke_test.py` | One fast GONS fit (N-BaIoT, seed 42) end-to-end; asserts **OS-HM 0.6565** to ±0.002 (10-seed N-BaIoT mean 0.7704). ~70 s. |
+| **Main result** | `uv run python run_gons_main.py` | GONS, 7 datasets × 10 seeds, headline **OS-HM** + per-dataset table. |
 | **Ablation** | `uv run python run_gons_ablation.py` | The 4-component ablation on the GONS tuned config (refresh / min-distance scoring / capacity-512 / quantile). |
 
 All three score through the **single official scorer**
@@ -38,31 +38,39 @@ metric implementation in this repo (a parity test in `tests/` asserts this).
 
 ### Headline numbers (what to expect)
 
-**Main result** — GONS FIXED config (one global config), mean OS-HM over the
-open-set sessions, averaged across 10 seeds (backing CSV:
-`results_oshm_matrix_5ds.csv`, `full_metric_5ds_mean.csv`):
+**Main result** — GONS FIXED config (one global config; the kernel bandwidth is the
+uniform kNN-20 rule, evaluated on each dataset's own base-session training split),
+mean OS-HM over the open-set sessions, averaged across 10 seeds (backing CSV:
+`results/oshm_matrix_7ds.csv`):
 
-| Dataset    | OS-HM |
-|------------|------:|
-| ToN-IoT    | 0.800 |
-| N-BaIoT    | 0.770 |
-| CICIDS2018 | 0.732 |
-| 5G-NIDD    | 0.821 |
-| NSL-KDD    | 0.643 |
-| **Mean**   | **0.7532** |
+| Dataset                 | OS-HM |
+|-------------------------|------:|
+| 5G-NIDD                 | 0.8494 |
+| ToN-IoT                 | 0.8025 |
+| N-BaIoT                 | 0.7704 |
+| CICIDS2018              | 0.7102 |
+| Edge-IIoTset            | 0.6170 |
+| CICIoT2023 (7-category) | 0.6072 |
+| NSL-KDD                 | 0.6005 |
+| **Mean**                | **0.7082** |
 
-**Ablation** — OS-HM drop when each GONS component is removed (positive = the
-component helps; backing CSV: `ablation_per_ds.csv`):
+Against the strongest per-dataset-tuned baseline (EWC-NCM, 0.5127) that is
+**+0.1955**, winning **49 of 49** method-dataset cells, **44** surviving
+Holm correction (`results/significance_all_baselines_7ds.csv`).
 
-| Removed component                  | Δ OS-HM |
-|------------------------------------|--------:|
-| consolidated refresh               | +0.067  |
-| min-distance scoring (→ energy)    | +0.146  |
-| RFF capacity 512 (→ 128)           | +0.053  |
-| quantile (NCDR) classification     | +0.0003 (INERT) |
+**Ablation** — OS-HM when each GONS component is removed, seven datasets
+(backing CSV: `results/component_ablation_7ds.csv`):
 
-The quantile/NCDR arm is reported as **inert** — it is part of the model but does
-not move the headline metric on this benchmark.
+| Variant                            | OS-HM | Δ vs complete |
+|------------------------------------|------:|--------------:|
+| Complete method                    | 0.7082 |  —      |
+| Without low-support tie-break      | 0.7094 | +0.0012 |
+| Feature map capacity 128           | 0.6678 | −0.0404 |
+| Without prototype refresh          | 0.6171 | −0.0911 |
+| Energy score instead of distance   | 0.5120 | −0.1962 |
+
+The low-support tie-break is **inert** on this benchmark (+0.0012, median cell
+difference +5e-5).
 
 ### Runtime
 
@@ -123,7 +131,7 @@ write `data/processed/<name>/` matching `gons_configs.py` (`DATASETS`), and re-r
 > conclusions.
 
 If you only have the two bundled datasets, both runners will still execute and
-score those two — the other three rows will simply be skipped with a clear
+score those two — the other five rows will simply be skipped with a clear
 message.
 
 ---
@@ -134,20 +142,21 @@ Every number in the paper is backed by a shipped CSV under `results/`:
 
 | Paper element | Backing artifact |
 |---|---|
-| Headline OS-HM; CCR/TUR breakdown (Tables 5, 6) | `results_oshm_matrix_5ds.csv`, `full_metric_5ds_mean.csv`, `per_dataset_full_metrics.csv` |
-| Significance (Δ, paired-t, Wilcoxon) | `significance_vs_ewc_ncm_tuned.csv` |
-| Component ablation (Table 7) | `ablation_per_ds.csv` |
-| Forgetting / BWT (Table 10) | `forgetting_bwt_summary.csv`, `forgetting_per_session.csv` |
-| Projection ablation +41.3/+36.0 (Table 11) | `projection_ablation.csv` |
-| K + class-order robustness (Table 12) | `k_sensitivity.csv`, `class_order_sensitivity.csv` |
-| Per-seed robustness (Fig 4) | `results_ours_per_seed.csv` |
-| Cross-session slack η_t + γ_min stress (Fig 5) | `eta_drift.csv`, `gamma_min_stress.csv` |
-| Reject ROC / AUROC 0.778–0.941 (Fig 3) | `roc_summary.csv` |
-| Margin-feasibility audit (0 of 1,230) | `projected_unknown_variance.csv` |
+| Headline OS-HM, fixed vs tuned | `headline_fixed_vs_tuned_7ds.csv` |
+| GONS against every tuned baseline | `oshm_matrix_7ds.csv` |
+| Significance (paired-t, Wilcoxon, Holm) | `significance_all_baselines_7ds.csv` |
+| Per-dataset, per-method with SD | `per_dataset_all_methods_7ds.csv` |
+| Component ablation | `component_ablation_7ds.csv` |
+| Projection ablation (null-space vs PCA vs random) | `projection_ablation_7ds.csv` |
+| Forgetting / BWT | `forgetting_bwt_summary_7ds.csv`, `forgetting_per_session_7ds.csv` |
+| Per-session CCR / TUR trajectory | `per_session_metrics_7ds.csv` |
+| Shot count + class-order robustness | `k_sensitivity_7ds.csv`, `class_order_sensitivity_7ds.csv` |
+| Kernel bandwidth rule selection | `bandwidth_rule.csv` |
+| Where the fixed cell ranks in the grid | `config_selection.csv` |
+| Per-seed values, every method | `per_seed_all_methods_7ds.csv` |
 
-The per-seed array (`results_ours_per_seed.csv`) is the lowest-level artifact:
-one row per `(dataset, config, seed)` with `os_hm`/`ccr`/`tur`/`f1_unknown`/
-`macro_f1_with_unknown`. The aggregate CSVs above are derived from it.
+The per-seed array (`per_seed_all_methods_7ds.csv`) is the lowest-level artifact:
+one row per `(dataset, seed, method)`. The aggregate CSVs above are derived from it.
 
 ---
 
@@ -163,11 +172,12 @@ one row per `(dataset, config, seed)` with `os_hm`/`ccr`/`tur`/`f1_unknown`/
 uv run python smoke_test.py
 ```
 
-Fits GONS on N-BaIoT seed 42 end-to-end and asserts a valid OS-HM. The seed-42
-single run scores **OS-HM 0.7029** (CCR 0.7152, TUR 0.7127) — bit-exact with the
-reference value for that cell; the headline 0.770 is the 10-seed mean
-(per-seed range ~0.69–0.84). If this passes, your environment + data are wired
-correctly. Runtime ~75 s on N-BaIoT (the largest bundled split).
+Fits GONS on N-BaIoT seed 42 end-to-end. The seed-42 single run scores
+**OS-HM 0.6565** (CCR 0.6197, TUR 0.7191); the 10-seed N-BaIoT mean is 0.7704. If
+this passes, your environment and data wiring are correct. Runtime ~70 s.
+
+The assertion is tight (±0.002), so it is the first thing to run if a
+re-implementation disagrees with anything else in this package.
 
 ### Main result
 
@@ -247,7 +257,7 @@ gons-release/
 │   ├── fixed/                    # exported FIXED headline config, per dataset
 │   └── tuned/                    # exported per-dataset TUNED config (ablation base)
 ├── data/
-│   ├── README.md                 # sources + prep for the full 5 datasets
+│   ├── README.md                 # sources + prep for the full 7 datasets
 │   └── processed/                # bundled small datasets (nbaiot_5k, nsl_kdd_ta)
 ├── results/                      # per-seed + per-table result arrays (§4)
 ├── src/gons/                     # the GONS package

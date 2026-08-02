@@ -1,4 +1,0 @@
-arm,CCR,TUR,OS_HM,F1_unknown,macro_F1_with_unknown
-GONS fixed,0.7369,0.8444,0.7532,0.6476,0.7145
-GONS tuned,0.7512,0.8293,0.7562,0.6438,0.7225
-# note: the tuned OS_HM=0.7562 is the 10-seed-mean selection. The CCR/TUR/F1/macroF1 columns are not re-cut for the tuned selection (carried from the seed-42-selected arm); the fixed arm is the headline and carries the authoritative full breakdown.

@@ -670,6 +670,36 @@ def _compute_median_heuristic_gamma(
     return 1.0 / median_sq
 
 
+def _compute_knn_gamma(
+    x_fit: MapArray,
+    *,
+    k: int = 20,
+    max_sample: int = 2000,
+    random_state: int = 0,
+) -> float:
+    """gamma = 1 / mean(squared distance to the k-th nearest neighbour).
+
+    Derived from the TRAINING matrix alone -- no labels, no calibration, no test --
+    so it is a rule, not a tuned value, and the identical rule applies to every
+    dataset.
+
+    k is a parameter of the rule, selected leave-one-dataset-out. Small k is not
+    merely noisier here: IDS traffic contains near-duplicate flows (a flood emits
+    thousands of near-identical records), so the 2nd/3rd-nearest neighbour can sit
+    at distance ~0 -- 36% of CICIDS2018 points at k=2 -- which deflates the mean and
+    inflates gamma.
+    """
+    rng = np.random.default_rng(random_state)
+    n = x_fit.shape[0]
+    sample = x_fit[rng.choice(n, max_sample, replace=False)] if n > max_sample else x_fit
+    d2 = np.sum((sample[:, None, :] - sample[None, :, :]) ** 2, axis=2)
+    np.fill_diagonal(d2, np.inf)
+    k_eff = min(k, d2.shape[1] - 1)
+    kth = np.partition(d2, k_eff - 1, axis=1)[:, k_eff - 1]
+    v = float(np.mean(kth))
+    return 1.0 / v if v > 1e-12 else 1.0
+
+
 def fit_explicit_map(
     x_fit: MapArray,
     config: ExplicitMapConfig,
@@ -678,11 +708,30 @@ def fit_explicit_map(
 ) -> ExplicitMap:
     """Fit one of the supported frozen explicit maps.
 
-    If ``config.gamma`` is negative (e.g. -1.0), the median heuristic is used
-    to automatically determine gamma from the training data.
+    ``config.gamma`` conventions:
+
+        > 0    a literal bandwidth. The DEPLOYED configuration takes this path, with
+               the value produced by gons_configs.resolve_map_gamma -- the uniform
+               kNN-20 rule evaluated on that dataset's base-session training split.
+        -1.0   median heuristic, computed here from ``x_fit``.
+        -2.0   UNRESOLVED sentinel. Raises.
+
+    The deployed bandwidth is a RULE rather than a per-dataset number: GONS uses one
+    fixed global configuration across all datasets, while every baseline receives
+    per-dataset tuning, so the bandwidth must be produced the same way everywhere.
+    The rule is defined over the base-session training matrix, which is not
+    ``x_fit``; it is therefore evaluated in gons_configs.resolve_map_gamma and this
+    function only consumes the resolved number.
     """
 
     effective_gamma = config.gamma
+    if effective_gamma == -2.0:
+        raise ValueError(
+            "map_gamma is the UNRESOLVED sentinel (-2.0): the kNN-20 rule could not "
+            "be evaluated because this dataset's splits are not present. Prepare the "
+            "data (see prepare_dataset.py) and rebuild the config via "
+            "gons_configs.make_gons_cfg."
+        )
     if effective_gamma < 0:
         effective_gamma = _compute_median_heuristic_gamma(
             x_fit, random_state=config.random_state,

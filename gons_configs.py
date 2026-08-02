@@ -11,7 +11,9 @@ GONS FIXED grid cell (argmax of the per-dataset-mean OS-HM sweep):
     enable_ncdr_classification = True
     scoring_mode = "min_distance"   (deployed)
     map_n_components = 512, d_proj_max = 32
-Per-dataset map_gamma is kept from the canonical per-dataset "ours" family.
+    map_gamma = resolve_map_gamma(dataset, seed)  -- the kNN-20 bandwidth rule,
+                identical for every dataset, evaluated on that dataset's own
+                base-session training split
 """
 
 from __future__ import annotations
@@ -20,7 +22,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
 
-# Per-dataset paths + base_class_ratio + per-ds map_gamma (canonical "ours" family).
+# Per-dataset paths + base_class_ratio ONLY. No per-dataset model knobs live here.
 # Datasets whose processed splits are not bundled are still listed; the runner
 # skips a dataset whose train.csv is missing (with a clear message).
 DATASETS: dict[str, dict] = {
@@ -29,35 +31,43 @@ DATASETS: dict[str, dict] = {
         "cal": "data/processed/toniot/calibration.csv",
         "test": "data/processed/toniot/test.csv",
         "ratio": 0.5,
-        "map_gamma": 1.0,
     },
     "nbaiot": {
         "train": "data/processed/nbaiot_5k/train.csv",
         "cal": "data/processed/nbaiot_5k/calibration.csv",
         "test": "data/processed/nbaiot_5k/test.csv",
         "ratio": 0.5,
-        "map_gamma": -1.0,
     },
     "cicids2018": {
         "train": "data/processed/cicids2018_5k/train.csv",
         "cal": "data/processed/cicids2018_5k/calibration.csv",
         "test": "data/processed/cicids2018_5k/test.csv",
         "ratio": 0.5,
-        "map_gamma": 1.0,
     },
     "5g_nidd": {
         "train": "data/processed/5g_nidd_5k/train.csv",
         "cal": "data/processed/5g_nidd_5k/calibration.csv",
         "test": "data/processed/5g_nidd_5k/test.csv",
         "ratio": 0.45,
-        "map_gamma": -1.0,
     },
     "nsl_kdd": {
         "train": "data/processed/nsl_kdd_ta/train.csv",
         "cal": "data/processed/nsl_kdd_ta/calibration.csv",
         "test": "data/processed/nsl_kdd_ta/test.csv",
         "ratio": 0.5,
-        "map_gamma": -1.0,
+    },
+    # Added 2026-08-03: the reported benchmark is seven datasets.
+    "edge_iiotset": {
+        "train": "data/processed/edge_iiotset_5k_ports/train.csv",
+        "cal": "data/processed/edge_iiotset_5k_ports/calibration.csv",
+        "test": "data/processed/edge_iiotset_5k_ports/test.csv",
+        "ratio": 0.5,
+    },
+    "ciciot2023_cat": {
+        "train": "data/processed/ciciot2023_category_10k/train.csv",
+        "cal": "data/processed/ciciot2023_category_10k/calibration.csv",
+        "test": "data/processed/ciciot2023_category_10k/test.csv",
+        "ratio": 0.5,
     },
 }
 
@@ -95,6 +105,57 @@ def dataset_available(ds_name: str) -> bool:
     return (REPO / ds["train"]).exists() and (REPO / ds["cal"]).exists() and (REPO / ds["test"]).exists()
 
 
+# Stored in place of a resolved bandwidth when the dataset's splits are not
+# bundled. maps/explicit.py raises on it rather than substituting a value.
+MAP_GAMMA_UNRESOLVED = -2.0
+
+_GAMMA_CACHE: dict[tuple[str, int], float] = {}
+
+
+def resolve_map_gamma(ds_name: str, seed: int) -> float:
+    """Evaluate the kNN-20 bandwidth rule on this (dataset, seed)'s base split.
+
+    The bandwidth is a fit-time constant derived from the base-session training
+    matrix, and it is the same constant for every session of the run. It is resolved
+    once here rather than inside the map, so that it is always taken from the base
+    split specifically.
+
+    The base split must match the pipeline's exactly: `int(len(labels) * ratio)`
+    truncates (it is not `round`), the label list is lowercased and sorted before
+    sampling, and the preprocessor is fit on the base-class training frame only.
+
+    Reference value: N-BaIoT seed 42 -> 0.0173399338.
+    """
+    key = (ds_name, seed)
+    if key in _GAMMA_CACHE:
+        return _GAMMA_CACHE[key]
+
+    import random as _random
+
+    import numpy as np
+    import pandas as pd
+
+    from gons.config.data import PreprocessingConfig
+    from gons.maps.explicit import _compute_knn_gamma
+    from gons.preprocess import fit_schema_and_preprocessor, transform_rows
+
+    ds = DATASETS[ds_name]
+    train = pd.read_csv(REPO / ds["train"])
+    labels = sorted(train["label"].astype(str).str.lower().unique())
+    n_base = min(max(1, int(len(labels) * float(ds["ratio"]))), len(labels) - 1)
+    base = sorted(_random.Random(seed).sample(labels, k=n_base))
+    tr_base = train[train["label"].astype(str).str.lower().isin(base)].reset_index(drop=True)
+
+    bundle = fit_schema_and_preprocessor(
+        tr_base, label_column="label",
+        config=PreprocessingConfig(numeric_scaler="quantile"),
+    )
+    X, _ = transform_rows(bundle.schema, bundle.preprocessor, tr_base, label_column="label")
+    gamma = _compute_knn_gamma(np.asarray(X, dtype=np.float64))
+    _GAMMA_CACHE[key] = gamma
+    return gamma
+
+
 def make_gons_cfg(ds_name: str, seed: int, tag: str, overrides: dict | None = None) -> dict:
     """Build a GONS FSCIL config for one (dataset, seed).
 
@@ -109,7 +170,15 @@ def make_gons_cfg(ds_name: str, seed: int, tag: str, overrides: dict | None = No
         "seed": seed,
         "map_kind": "rff",
         "map_kernel": "rbf",
-        "map_gamma": ds["map_gamma"],
+        # One rule, applied identically to every dataset, resolved against that
+        # dataset's own base-session training split. Resolving reads the training
+        # CSV, so when the splits are not bundled the UNRESOLVED sentinel is stored
+        # instead; it raises on use, and a run is impossible without the data anyway.
+        "map_gamma": (
+            resolve_map_gamma(ds_name, seed)
+            if dataset_available(ds_name)
+            else MAP_GAMMA_UNRESOLVED
+        ),
         "map_n_components": 512,
         "d_proj_max": 32,
         "residual_handling": "drop",

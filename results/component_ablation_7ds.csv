@@ -1,0 +1,6 @@
+Variant,5G-NIDD,ToN-IoT,N-BaIoT,CICIDS2018,Edge-IIoTset,CICIoT2023 (7-category),NSL-KDD,Mean,Delta_ablated_minus_complete
+Complete method,0.8494,0.8025,0.7704,0.7102,0.617,0.6072,0.6005,0.7082,0.0
+Without low-support tie-break,0.8513,0.8029,0.7722,0.71,0.6203,0.6083,0.6006,0.7094,0.0012
+Feature map capacity 128,0.822,0.7419,0.6688,0.6993,0.5381,0.5199,0.6847,0.6678,-0.0404
+Without prototype refresh,0.7429,0.7372,0.7063,0.6286,0.5826,0.5788,0.343,0.6171,-0.0911
+Energy score instead of distance,0.8466,0.5533,0.2694,0.7135,0.5803,0.0198,0.6011,0.512,-0.1962

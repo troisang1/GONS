@@ -1,0 +1,9 @@
+Rank,Rejection quantile,Random features,Alpha,Tie-break,Seven datasets,Shipped
+1,0.85,False,0.2,False,0.7105,
+2,0.85,False,0.0,False,0.7094,
+3,0.85,False,0.0,True,0.7082,yes
+4,0.85,False,0.2,True,0.7077,
+5,0.9,False,0.2,False,0.7074,
+6,0.9,False,0.0,False,0.7063,
+7,0.9,False,0.0,True,0.7051,
+8,0.9,False,0.2,True,0.7047,

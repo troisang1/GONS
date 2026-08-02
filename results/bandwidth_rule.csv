@@ -1,0 +1,7 @@
+Rule,Seven datasets
+Median,0.6825
+Mean,0.6834
+kNN-5,0.6882
+kNN-10,0.7064
+kNN-20,0.7082
+kNN-50,0.7013

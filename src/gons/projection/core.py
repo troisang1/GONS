@@ -312,6 +312,12 @@ def solve_smallest_symmetric_eigs(
             mode="dense",
         )
 
+    # Deterministic ARPACK start vector: without `v0`, ARPACK draws its starting
+    # residual from its own unseeded RNG, so repeated runs of the same config and
+    # seed need not agree. Unreachable for the deployed config, where
+    # n_dense_max (1024) exceeds map_n_components (512) and the exact dense path
+    # is taken instead.
+    v0 = np.random.default_rng(0).standard_normal(dimension)
     try:
         if config.use_shift_invert_small:
             eigvals, eigvecs = eigsh(
@@ -321,6 +327,7 @@ def solve_smallest_symmetric_eigs(
                 which="LM",
                 tol=config.eig_tol,
                 maxiter=config.eig_maxiter,
+                v0=v0,
             )
             mode = "eigsh_shift_invert"
         else:
@@ -330,13 +337,18 @@ def solve_smallest_symmetric_eigs(
                 which="SM",
                 tol=config.eig_tol,
                 maxiter=config.eig_maxiter,
+                v0=v0,
             )
             mode = "eigsh_sm"
     except ArpackNoConvergence as err:
+        # Require the FULL k_eff, or take the exact dense path. The caller does
+        #     keep_count = min(d_proj_max, eigvals.size)
+        # so accepting a partial solve that returned fewer than k_eff directions
+        # would silently yield a lower-rank projection than requested.
         if (
             err.eigenvalues is not None
             and err.eigenvectors is not None
-            and len(err.eigenvalues) > 0
+            and len(err.eigenvalues) >= k_eff
         ):
             eigvals = np.asarray(err.eigenvalues, dtype=np.float64)
             eigvecs = np.asarray(err.eigenvectors, dtype=np.float64)
