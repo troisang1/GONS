@@ -1,19 +1,19 @@
 # GENERATED record (do not hand-edit). Regenerate with: python export_configs.py
 # Source: gons_configs.py -> make_gons_tuned_cfg (per-dataset TUNED grid cell).
 #
-# The per-dataset-TUNED comparison arm for toniot, at seed 42. Reproduce with:
-#   python run_gons_main.py --arm tuned --datasets toniot
+# The per-dataset-TUNED comparison arm for ciciot2023_cat, at seed 42. Reproduce with:
+#   python run_gons_main.py --arm tuned --datasets ciciot2023_cat
 #
 # This is NOT the ablation base -- the shipped ablation is on the FIXED config.
-# `map_gamma` here is the 'knn10' bandwidth rule (the tuned arm selects the
+# `map_gamma` here is the 'knn5' bandwidth rule (the tuned arm selects the
 # rule as well as the grid cell), resolved on this dataset+seed's base split.
 task: fscil
-experiment_name: tuned_toniot_s42
+experiment_name: tuned_ciciot2023_cat_s42
 method: gons
 dataset_config_path: configs/data/dataset.yaml
-train_path: data/processed/toniot/train.csv
-calibration_path: data/processed/toniot/calibration.csv
-test_path: data/processed/toniot/test.csv
+train_path: data/processed/ciciot2023_category_10k/train.csv
+calibration_path: data/processed/ciciot2023_category_10k/calibration.csv
+test_path: data/processed/ciciot2023_category_10k/test.csv
 output_root: artifacts/runs
 base_class_ratio: 0.5
 base_class_seed: 42
@@ -26,15 +26,15 @@ model:
   seed: 42
   map_kind: rff
   map_kernel: rbf
-  map_gamma: <resolved per (dataset, seed) by gons_configs.resolve_map_gamma -- knn10
+  map_gamma: <resolved per (dataset, seed) by gons_configs.resolve_map_gamma -- knn5
     rule>
   map_n_components: 512
   d_proj_max: 32
   residual_handling: drop
   energy_temperature: 1.0
   enable_contrastive_rff: false
-  score_support_penalty_alpha: 0.2
-  score_support_penalty: true
+  score_support_penalty_alpha: 0.0
+  score_support_penalty: false
   score_support_penalty_fn: log
   enable_ncdr_classification: false
   ncdr_threshold: 0.85

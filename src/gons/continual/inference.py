@@ -692,7 +692,7 @@ def _score_projected_rows(
         unique_classes = list(dict.fromkeys(class_by_proto))
         class_to_proto_idx: dict[str, NDArray[np.int64]] = {}
         if use_ncdr:
-            for ci, cls in enumerate(unique_classes):
+            for cls in unique_classes:
                 class_to_proto_idx[cls] = np.array(
                     [i for i, c in enumerate(class_by_proto) if c == cls],
                     dtype=np.int64,

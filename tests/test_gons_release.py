@@ -17,10 +17,14 @@ sys.path.insert(0, str(REPO / "src"))
 
 from gons.evaluation.aggregate_openset import open_set_session_metrics  # noqa: E402
 from gons_configs import (  # noqa: E402
+    DATASETS,
+    FIXED_GAMMA_RULE,
     GONS_TUNED_PER_DS,
+    MODEL_SEED,
     dataset_available,
     make_gons_cfg,
     make_gons_tuned_cfg,
+    resolve_map_gamma,
 )
 
 
@@ -31,6 +35,55 @@ from gons_configs import (  # noqa: E402
 def test_tuned_cfg_scoring_mode(ds):
     cfg = make_gons_tuned_cfg(ds, 42, tag="t")
     assert cfg["model"]["scoring_mode"] == "min_distance"
+
+
+def test_tuned_covers_every_dataset():
+    """Every dataset in the benchmark needs a tuned entry.
+
+    The ablation and the tuned arm both index GONS_TUNED_PER_DS by dataset, so a
+    missing entry is a KeyError at run time, not a graceful skip.
+    """
+    assert set(GONS_TUNED_PER_DS) == set(DATASETS)
+
+
+@pytest.mark.parametrize("ds", list(GONS_TUNED_PER_DS))
+def test_tuned_entry_carries_its_bandwidth_rule(ds):
+    """The tuned arm selects the bandwidth rule as well as the grid cell."""
+    rule = GONS_TUNED_PER_DS[ds]["gamma_rule"]
+    assert rule == "median" or (rule.startswith("knn") and rule[3:].isdigit())
+
+
+@pytest.mark.parametrize("ds", list(DATASETS))
+@pytest.mark.parametrize("seed", [42, 47, 51])
+def test_model_seed_is_pinned_and_protocol_seed_is_not(ds, seed):
+    """model.seed is the MODEL rng and is 42 on every cell; the protocol seed
+    travels in base_class_seed.
+
+    Every published run went through `app.py run-experiment`, whose --seed
+    defaults to 42 and is applied unconditionally. Letting model.seed follow the
+    protocol seed redraws the RFF per seed and silently stops reproducing every
+    cell except seed 42.
+    """
+    for make in (make_gons_cfg, make_gons_tuned_cfg):
+        cfg = make(ds, seed, tag="t")
+        assert cfg["model"]["seed"] == MODEL_SEED == 42
+        assert cfg["base_class_seed"] == seed
+
+
+@pytest.mark.skipif(not dataset_available("nbaiot"), reason="nbaiot not bundled")
+def test_bandwidth_rule_reference_value():
+    """The kNN-20 rule on N-BaIoT seed 42 is the documented anchor."""
+    assert FIXED_GAMMA_RULE == "knn20"
+    assert resolve_map_gamma("nbaiot", 42, rule="knn20") == pytest.approx(
+        0.0173399338, abs=1e-9
+    )
+
+
+@pytest.mark.skipif(not dataset_available("nbaiot"), reason="nbaiot not bundled")
+def test_bandwidth_rule_varies_with_protocol_seed():
+    """gamma is resolved on the base split, which the protocol seed selects."""
+    gammas = {resolve_map_gamma("nbaiot", s, rule="knn20") for s in (42, 43, 44)}
+    assert len(gammas) == 3
 
 
 def test_fixed_cfg_is_the_global_cell():

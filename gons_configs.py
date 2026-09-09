@@ -81,21 +81,68 @@ GONS_FIXED = {
     "scoring_mode": "min_distance",
 }
 
-# Per-dataset TUNED grid cells (argmax of the per-dataset s42 sweep). These are
-# the FULL base of the ablation (the ablation uses the per-ds TUNED config, not
-# the global FIXED one).
+# Per-dataset TUNED grid cells -- the per-dataset argmax of the exhaustive
+# selection grid (32 cells x 6 bandwidth rules), each scored by ITS OWN 10-seed
+# mean. This is the "every method tuned per dataset" arm the paper compares the
+# ONE fixed config against; it is NOT the base of the ablation (that is FIXED --
+# see run_gons_ablation.py).
+#
+# The bandwidth rule is part of what the tuned arm selects, so each entry carries
+# its own `gamma_rule`; the FIXED config holds the rule at kNN-20 for every
+# dataset. Reproducing `results/headline_fixed_vs_tuned_7ds.csv` (Tuned column)
+# needs both the grid cell and the rule.
+#
+# Per-dataset 10-seed OS-HM these reach (results/headline_fixed_vs_tuned_7ds.csv):
+#   toniot .8125  nbaiot .7901  cicids2018 .7192  5g_nidd .8564
+#   nsl_kdd .6510  edge_iiotset .6647  ciciot2023_cat .6243   -> mean .7312
+# against FIXED .7082, i.e. the cost of shipping one global config is +0.0230.
 GONS_TUNED_PER_DS: dict[str, dict] = {
-    "toniot": {"threshold_quantile": 0.85, "enable_contrastive_rff": True,
-               "score_support_penalty_alpha": 0.20, "enable_ncdr_classification": True},
+    "toniot": {"threshold_quantile": 0.85, "enable_contrastive_rff": False,
+               "score_support_penalty_alpha": 0.20, "enable_ncdr_classification": False,
+               "gamma_rule": "knn10"},
     "nbaiot": {"threshold_quantile": 0.85, "enable_contrastive_rff": False,
-               "score_support_penalty_alpha": 0.0, "enable_ncdr_classification": False},
-    "cicids2018": {"threshold_quantile": 0.90, "enable_contrastive_rff": False,
-                   "score_support_penalty_alpha": 0.0, "enable_ncdr_classification": True},
-    "5g_nidd": {"threshold_quantile": 0.85, "enable_contrastive_rff": False,
-                "score_support_penalty_alpha": 0.20, "enable_ncdr_classification": True},
+               "score_support_penalty_alpha": 0.20, "enable_ncdr_classification": False,
+               "gamma_rule": "knn50"},
+    "cicids2018": {"threshold_quantile": 0.95, "enable_contrastive_rff": False,
+                   "score_support_penalty_alpha": 0.0, "enable_ncdr_classification": True,
+                   "gamma_rule": "knn5"},
+    "5g_nidd": {"threshold_quantile": 0.99, "enable_contrastive_rff": False,
+                "score_support_penalty_alpha": 0.20, "enable_ncdr_classification": False,
+                "gamma_rule": "knn20"},
     "nsl_kdd": {"threshold_quantile": 0.85, "enable_contrastive_rff": False,
-                "score_support_penalty_alpha": 0.20, "enable_ncdr_classification": True},
+                "score_support_penalty_alpha": 0.0, "enable_ncdr_classification": True,
+                "gamma_rule": "median"},
+    "edge_iiotset": {"threshold_quantile": 0.90, "enable_contrastive_rff": True,
+                     "score_support_penalty_alpha": 0.20, "enable_ncdr_classification": False,
+                     "gamma_rule": "knn20"},
+    "ciciot2023_cat": {"threshold_quantile": 0.85, "enable_contrastive_rff": False,
+                       "score_support_penalty_alpha": 0.0, "enable_ncdr_classification": False,
+                       "gamma_rule": "knn5"},
 }
+
+# The bandwidth rule the FIXED config applies to every dataset.
+FIXED_GAMMA_RULE = "knn20"
+
+# ============================================================================ #
+# MODEL_SEED IS A CONSTANT, AND IT IS NOT THE PROTOCOL SEED.                    #
+#                                                                              #
+# Two different seeds are in play and conflating them does not reproduce the    #
+# published numbers:                                                           #
+#                                                                              #
+#   base_class_seed  = the PROTOCOL seed, 42..51. Picks the base/novel class    #
+#                      split and the few-shot support rows. This is what        #
+#                      "10 seeds" means in the paper.                          #
+#   model.seed       = the MODEL rng (the RFF draw). Held at 42 on every        #
+#                      published cell.                                         #
+#                                                                              #
+# Every published run was produced by `app.py run-experiment`, whose `--seed`   #
+# option defaults to 42 and is passed to the runner unconditionally, so the     #
+# runner overwrote model.seed with 42 on every cell regardless of the protocol  #
+# seed. Letting model.seed follow the protocol seed instead redraws the RFF per #
+# seed: seed 42 still matches exactly (42 == 42) while seeds 43..51 drift, in   #
+# both directions, by up to ~0.03 OS-HM per cell.                              #
+# ============================================================================ #
+MODEL_SEED = 42
 
 DATA_CONFIG_PATH = "configs/data/dataset.yaml"
 
@@ -109,24 +156,31 @@ def dataset_available(ds_name: str) -> bool:
 # bundled. maps/explicit.py raises on it rather than substituting a value.
 MAP_GAMMA_UNRESOLVED = -2.0
 
-_GAMMA_CACHE: dict[tuple[str, int], float] = {}
+_GAMMA_CACHE: dict[tuple[str, int, str], float] = {}
 
 
-def resolve_map_gamma(ds_name: str, seed: int) -> float:
-    """Evaluate the kNN-20 bandwidth rule on this (dataset, seed)'s base split.
+def resolve_map_gamma(ds_name: str, seed: int, rule: str = "knn20") -> float:
+    """Evaluate a bandwidth rule on this (dataset, seed)'s base split.
 
     The bandwidth is a fit-time constant derived from the base-session training
     matrix, and it is the same constant for every session of the run. It is resolved
     once here rather than inside the map, so that it is always taken from the base
     split specifically.
 
+    `rule` is `knn<k>` (gamma = 1 / mean squared distance to the k-th nearest
+    neighbour) or `median` (gamma = 1 / median pairwise squared distance). The
+    FIXED config uses kNN-20 on every dataset; the per-dataset TUNED arm selects
+    the rule along with the grid cell (see GONS_TUNED_PER_DS). Both branches call
+    the library's own primitives in `gons.maps.explicit`, so a rule resolved here
+    is bit-identical to the one the map would compute internally.
+
     The base split must match the pipeline's exactly: `int(len(labels) * ratio)`
     truncates (it is not `round`), the label list is lowercased and sorted before
     sampling, and the preprocessor is fit on the base-class training frame only.
 
-    Reference value: N-BaIoT seed 42 -> 0.0173399338.
+    Reference value: N-BaIoT seed 42, kNN-20 -> 0.0173399338.
     """
-    key = (ds_name, seed)
+    key = (ds_name, seed, rule)
     if key in _GAMMA_CACHE:
         return _GAMMA_CACHE[key]
 
@@ -136,7 +190,7 @@ def resolve_map_gamma(ds_name: str, seed: int) -> float:
     import pandas as pd
 
     from gons.config.data import PreprocessingConfig
-    from gons.maps.explicit import _compute_knn_gamma
+    from gons.maps.explicit import _compute_knn_gamma, _compute_median_heuristic_gamma
     from gons.preprocess import fit_schema_and_preprocessor, transform_rows
 
     ds = DATASETS[ds_name]
@@ -151,7 +205,13 @@ def resolve_map_gamma(ds_name: str, seed: int) -> float:
         config=PreprocessingConfig(numeric_scaler="quantile"),
     )
     X, _ = transform_rows(bundle.schema, bundle.preprocessor, tr_base, label_column="label")
-    gamma = _compute_knn_gamma(np.asarray(X, dtype=np.float64))
+    Xf = np.asarray(X, dtype=np.float64)
+    if rule == "median":
+        gamma = _compute_median_heuristic_gamma(Xf)
+    elif rule.startswith("knn") and rule[3:].isdigit():
+        gamma = _compute_knn_gamma(Xf, k=int(rule[3:]))
+    else:
+        raise ValueError(f"unknown bandwidth rule {rule!r}; expected 'median' or 'knn<k>'")
     _GAMMA_CACHE[key] = gamma
     return gamma
 
@@ -167,7 +227,9 @@ def make_gons_cfg(ds_name: str, seed: int, tag: str, overrides: dict | None = No
     fixed = GONS_FIXED
     model = {
         "label_column": "label",
-        "seed": seed,
+        # NOT the protocol seed -- see MODEL_SEED above. The protocol seed enters
+        # through base_class_seed below.
+        "seed": MODEL_SEED,
         "map_kind": "rff",
         "map_kernel": "rbf",
         # One rule, applied identically to every dataset, resolved against that
@@ -175,7 +237,7 @@ def make_gons_cfg(ds_name: str, seed: int, tag: str, overrides: dict | None = No
         # CSV, so when the splits are not bundled the UNRESOLVED sentinel is stored
         # instead; it raises on use, and a run is impossible without the data anyway.
         "map_gamma": (
-            resolve_map_gamma(ds_name, seed)
+            resolve_map_gamma(ds_name, seed, rule=FIXED_GAMMA_RULE)
             if dataset_available(ds_name)
             else MAP_GAMMA_UNRESOLVED
         ),
@@ -222,7 +284,16 @@ def make_gons_cfg(ds_name: str, seed: int, tag: str, overrides: dict | None = No
 
 
 def make_gons_tuned_cfg(ds_name: str, seed: int, tag: str, overrides: dict | None = None) -> dict:
-    """GONS per-dataset TUNED config — the FULL base of the ablation."""
+    """GONS per-dataset TUNED config — the per-dataset-tuned comparison arm.
+
+    Applies that dataset's own argmax grid cell AND its own bandwidth rule. The
+    rule matters: five of the seven tuned winners sit on a rule other than the
+    FIXED kNN-20, so holding the bandwidth at kNN-20 here would not reproduce
+    `results/headline_fixed_vs_tuned_7ds.csv`.
+
+    This is NOT the ablation base — the shipped ablation is on the FIXED config
+    (see run_gons_ablation.py).
+    """
 
     cfg = make_gons_cfg(ds_name, seed, tag=tag)
     tuned = GONS_TUNED_PER_DS[ds_name]
@@ -233,6 +304,11 @@ def make_gons_tuned_cfg(ds_name: str, seed: int, tag: str, overrides: dict | Non
     m["score_support_penalty"] = tuned["score_support_penalty_alpha"] > 0
     m["enable_ncdr_classification"] = tuned["enable_ncdr_classification"]
     m["scoring_mode"] = "min_distance"
+    m["map_gamma"] = (
+        resolve_map_gamma(ds_name, seed, rule=tuned["gamma_rule"])
+        if dataset_available(ds_name)
+        else MAP_GAMMA_UNRESOLVED
+    )
     if overrides:
         if "refresh_after_session" in overrides:
             cfg["refresh_after_session"] = overrides.pop("refresh_after_session")

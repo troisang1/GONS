@@ -1,17 +1,28 @@
 #!/usr/bin/env python
-"""GONS 4-component ablation (per-dataset TUNED config).
+"""GONS 4-component ablation (FIXED config).
 
-Ablates the GONS FULL (per-dataset tuned, min-distance scoring, refresh ON,
-capacity 512) config one component at a time across seeds 42..51, scoring each
-run through the official OS-HM scorer. Prints the signed Delta OS-HM of each arm
-vs FULL (positive = the removed component helps). Resumable.
+Ablates the GONS FULL config -- the ONE global FIXED cell, min-distance scoring,
+refresh ON, capacity 512, uniform kNN-20 bandwidth -- one component at a time
+across seeds 42..51, scoring each run through the official OS-HM scorer. Prints
+the signed Delta OS-HM of each arm vs FULL (positive = the removed component
+helps). Resumable.
 
-Arms:
-    full         — the deployed GONS config (baseline).
-    no_refresh   — disable the between-session consolidated refresh.
-    no_quantile  — disable quantile (NCDR) classification.
-    scoring      — min-distance -> energy scoring.
-    cap128       — RFF capacity 512 -> 128.
+The base is FIXED, not per-dataset TUNED: the shipped ablation
+(`results/component_ablation_7ds.csv`) is on the headline configuration, so its
+FULL row is identical to the headline row of `results/oshm_matrix_7ds.csv`
+(mean 0.7082). Building the arms on the tuned config instead would report deltas
+against a base that appears nowhere in the paper.
+
+Arms (the arm name is historical; the paper's label for the row is given after):
+    full         — the deployed GONS FIXED config (baseline / "Complete method").
+    no_quantile  — "Without low-support tie-break". Sets
+                   enable_ncdr_classification=False, removing the nearest-class
+                   distance-ratio tie-break. It does NOT touch the quantile
+                   scaler, despite the arm's name.
+    cap128       — "Feature map capacity 128". RFF capacity 512 -> 128.
+    no_refresh   — "Without prototype refresh". Disables the between-session
+                   consolidated refresh.
+    scoring      — "Energy score instead of distance". min-distance -> energy.
 
 Usage:
     python run_gons_ablation.py
@@ -23,9 +34,9 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from statistics import mean, pstdev
+from statistics import mean
 
-from gons_configs import DATASETS, dataset_available, make_gons_tuned_cfg
+from gons_configs import DATASETS, dataset_available, make_gons_cfg
 from gons_run import run_gons_cfg
 
 REPO = Path(__file__).resolve().parent
@@ -79,7 +90,7 @@ def main() -> int:
                     print(f"  {tag}  SKIP (cached os_hm={done[tag].get('os_hm')})")
                     rows.append(done[tag])
                     continue
-                cfg = make_gons_tuned_cfg(ds, seed, tag=tag, overrides=dict(ARM_OVERRIDES[arm]))
+                cfg = make_gons_cfg(ds, seed, tag=tag, overrides=dict(ARM_OVERRIDES[arm]))
                 r = run_gons_cfg(cfg, tag=tag)
                 r.update({"dataset": ds, "arm": arm, "seed": seed, "method": "gons_ablation"})
                 with open(OUT, "a") as f:

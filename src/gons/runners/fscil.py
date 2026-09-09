@@ -16,13 +16,6 @@ from gons.continual import consolidated_refresh
 from gons.data.ton_iot import load_ton_iot_csv
 from gons.evaluation.config import FscilExperimentConfig, load_fscil_config
 from gons.preprocess import transform_rows
-from gons.runtime import (
-    build_run_id,
-    current_git_commit,
-    find_repo_root,
-    python_runtime,
-    utc_now_iso,
-)
 from gons.runners.tiny_admission import (
     ModelState,
     _append_event,
@@ -33,6 +26,13 @@ from gons.runners.tiny_admission import (
     _serialize_state_metadata,
     _snapshot_state,
     _write_json,
+)
+from gons.runtime import (
+    build_run_id,
+    current_git_commit,
+    find_repo_root,
+    python_runtime,
+    utc_now_iso,
 )
 from gons.state.model import GONSModel
 

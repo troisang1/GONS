@@ -1,15 +1,20 @@
-# GENERATED record (do not hand-edit). Source: gons_configs.py -> make_gons_cfg.
+# GENERATED record (do not hand-edit). Regenerate with: python export_configs.py
+# Source: gons_configs.py -> make_gons_cfg.
 #
 # ONE fixed configuration, shared by every dataset. `map_gamma` is the uniform
-# kNN-20 bandwidth RULE, evaluated on each dataset's own base-session training
-# split, so the only things that vary across datasets are the data paths and the
-# base-class ratio.
+# knn20 bandwidth RULE, evaluated on each dataset's own base-session
+# training split, so the only things that vary across datasets are the data paths
+# and the base-class ratio.
 #
 # Reference value for verifying a re-implementation of the rule:
 #   N-BaIoT seed 42 -> map_gamma = 0.0173399338 -> OS-HM 0.6565
 task: fscil
+experiment_name: fixed_<dataset>_s42
 method: gons
 dataset_config_path: configs/data/dataset.yaml
+train_path: <DATASETS[dataset]['train']>
+calibration_path: <DATASETS[dataset]['cal']>
+test_path: <DATASETS[dataset]['test']>
 output_root: artifacts/runs
 base_class_ratio: <DATASETS[dataset]['ratio']>
 base_class_seed: 42
@@ -17,16 +22,12 @@ novel_class_order: sorted
 novel_support_fraction: 1.0
 novel_support_max_k: 5
 refresh_after_session: true
-experiment_name: fixed_<dataset>_s<seed>
-train_path: <DATASETS[dataset]['train']>
-calibration_path: <DATASETS[dataset]['cal']>
-test_path: <DATASETS[dataset]['test']>
 model:
   label_column: label
   seed: 42
   map_kind: rff
   map_kernel: rbf
-  map_gamma: <resolved per (dataset, seed) by gons_configs.resolve_map_gamma -- kNN-20
+  map_gamma: <resolved per (dataset, seed) by gons_configs.resolve_map_gamma -- knn20
     rule>
   map_n_components: 512
   d_proj_max: 32

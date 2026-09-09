@@ -1,19 +1,19 @@
 # GENERATED record (do not hand-edit). Regenerate with: python export_configs.py
 # Source: gons_configs.py -> make_gons_tuned_cfg (per-dataset TUNED grid cell).
 #
-# The per-dataset-TUNED comparison arm for toniot, at seed 42. Reproduce with:
-#   python run_gons_main.py --arm tuned --datasets toniot
+# The per-dataset-TUNED comparison arm for edge_iiotset, at seed 42. Reproduce with:
+#   python run_gons_main.py --arm tuned --datasets edge_iiotset
 #
 # This is NOT the ablation base -- the shipped ablation is on the FIXED config.
-# `map_gamma` here is the 'knn10' bandwidth rule (the tuned arm selects the
+# `map_gamma` here is the 'knn20' bandwidth rule (the tuned arm selects the
 # rule as well as the grid cell), resolved on this dataset+seed's base split.
 task: fscil
-experiment_name: tuned_toniot_s42
+experiment_name: tuned_edge_iiotset_s42
 method: gons
 dataset_config_path: configs/data/dataset.yaml
-train_path: data/processed/toniot/train.csv
-calibration_path: data/processed/toniot/calibration.csv
-test_path: data/processed/toniot/test.csv
+train_path: data/processed/edge_iiotset_5k_ports/train.csv
+calibration_path: data/processed/edge_iiotset_5k_ports/calibration.csv
+test_path: data/processed/edge_iiotset_5k_ports/test.csv
 output_root: artifacts/runs
 base_class_ratio: 0.5
 base_class_seed: 42
@@ -26,19 +26,19 @@ model:
   seed: 42
   map_kind: rff
   map_kernel: rbf
-  map_gamma: <resolved per (dataset, seed) by gons_configs.resolve_map_gamma -- knn10
+  map_gamma: <resolved per (dataset, seed) by gons_configs.resolve_map_gamma -- knn20
     rule>
   map_n_components: 512
   d_proj_max: 32
   residual_handling: drop
   energy_temperature: 1.0
-  enable_contrastive_rff: false
+  enable_contrastive_rff: true
   score_support_penalty_alpha: 0.2
   score_support_penalty: true
   score_support_penalty_fn: log
   enable_ncdr_classification: false
   ncdr_threshold: 0.85
-  threshold_quantile: 0.85
+  threshold_quantile: 0.9
   scoring_mode: min_distance
   refresh_mode: single_pass
   enable_local_affine_screen: false

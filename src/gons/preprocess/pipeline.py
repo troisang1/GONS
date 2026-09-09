@@ -12,8 +12,12 @@ from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import (
-    MinMaxScaler, OneHotEncoder, PowerTransformer, QuantileTransformer,
-    RobustScaler, StandardScaler,
+    MinMaxScaler,
+    OneHotEncoder,
+    PowerTransformer,
+    QuantileTransformer,
+    RobustScaler,
+    StandardScaler,
 )
 
 from gons.config.data import PreprocessingConfig

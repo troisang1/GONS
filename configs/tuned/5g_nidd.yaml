@@ -1,5 +1,12 @@
-# GENERATED config record (do not hand-edit). Authoritative source:
-# gons_configs.py -> make_gons_tuned_cfg (per-dataset TUNED grid cell). Reproduce via run_gons_main.py / run_gons_ablation.py.
+# GENERATED record (do not hand-edit). Regenerate with: python export_configs.py
+# Source: gons_configs.py -> make_gons_tuned_cfg (per-dataset TUNED grid cell).
+#
+# The per-dataset-TUNED comparison arm for 5g_nidd, at seed 42. Reproduce with:
+#   python run_gons_main.py --arm tuned --datasets 5g_nidd
+#
+# This is NOT the ablation base -- the shipped ablation is on the FIXED config.
+# `map_gamma` here is the 'knn20' bandwidth rule (the tuned arm selects the
+# rule as well as the grid cell), resolved on this dataset+seed's base split.
 task: fscil
 experiment_name: tuned_5g_nidd_s42
 method: gons
@@ -19,7 +26,8 @@ model:
   seed: 42
   map_kind: rff
   map_kernel: rbf
-  map_gamma: -1.0
+  map_gamma: <resolved per (dataset, seed) by gons_configs.resolve_map_gamma -- knn20
+    rule>
   map_n_components: 512
   d_proj_max: 32
   residual_handling: drop
@@ -28,9 +36,9 @@ model:
   score_support_penalty_alpha: 0.2
   score_support_penalty: true
   score_support_penalty_fn: log
-  enable_ncdr_classification: true
+  enable_ncdr_classification: false
   ncdr_threshold: 0.85
-  threshold_quantile: 0.85
+  threshold_quantile: 0.99
   scoring_mode: min_distance
   refresh_mode: single_pass
   enable_local_affine_screen: false

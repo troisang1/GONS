@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+message: "If you use this software or its result arrays, please cite the paper below."
+title: "GONS — Geometric Open-set Null Space"
+abstract: >-
+  Official code and supplementary material for the ISPEC 2026 paper "GONS:
+  Self-Calibrated Open-Set Rejection for Few-Shot Class-Incremental Intrusion
+  Detection". GONS is a non-deep null-space classifier for open-set few-shot
+  class-incremental network intrusion detection, with a rejection threshold read
+  from its own calibration data under a finite-sample bound.
+type: software
+license: MIT
+repository-code: "https://github.com/troisang1/GONS"
+authors:
+  - family-names: Nguyen
+    given-names: Xuan Ha
+    affiliation: "University College Dublin, Dublin, Ireland"
+    email: xuan.h.nguyen@ucdconnect.ie
+  - family-names: Le
+    given-names: Kim-Hung
+    affiliation: "University of Information Technology, VNU-HCM, Ho Chi Minh City, Vietnam"
+    email: hunglk@uit.edu.vn
+  - family-names: Le-Khac
+    given-names: Nhien-An
+    affiliation: "University College Dublin, Dublin, Ireland"
+    email: an.lekhac@ucd.ie
+keywords:
+  - network intrusion detection
+  - open-set recognition
+  - few-shot class-incremental learning
+  - null-space methods
+  - distribution-free guarantees
+preferred-citation:
+  type: conference-paper
+  title: >-
+    GONS: Self-Calibrated Open-Set Rejection for Few-Shot Class-Incremental
+    Intrusion Detection
+  authors:
+    - family-names: Nguyen
+      given-names: Xuan Ha
+    - family-names: Le
+      given-names: Kim-Hung
+    - family-names: Le-Khac
+      given-names: Nhien-An
+  collection-title: "Information Security Practice and Experience (ISPEC 2026)"
+  collection-type: proceedings
+  publisher:
+    name: Springer
+  year: 2026

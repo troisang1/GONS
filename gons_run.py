@@ -33,6 +33,9 @@ def run_gons_cfg(cfg: dict, tag: str, *, cleanup: bool = True) -> dict:
 
     t0 = time.time()
     try:
+        # `seed` here is the MODEL rng, not the protocol seed -- it mirrors
+        # `app.py run-experiment --seed`, which defaulted to 42 on every published
+        # run. The protocol seed travels in cfg["base_class_seed"].
         result = run_fscil_experiment(cfg_path, repo_root=REPO, seed=cfg["model"]["seed"])
     except Exception as exc:  # never let one cell kill a sweep
         return {

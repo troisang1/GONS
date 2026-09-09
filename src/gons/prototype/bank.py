@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy.special import logsumexp
 from scipy.spatial.distance import pdist
+from scipy.special import logsumexp
 
 from gons.config.model import ScoringMode
 from gons.projection.core import (

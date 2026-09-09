@@ -5,12 +5,14 @@ build-backend = "hatchling.build"
 [project]
 name = "gons"
 version = "1.0.0"
-description = "GONS (Geometric Open-set Null Space) — reproduction package for the open-set FSCIL main result + ablation."
+description = "GONS (Geometric Open-set Null Space) — official reproduction package for the ISPEC 2026 paper on open-set few-shot class-incremental intrusion detection."
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 license = { text = "MIT" }
 authors = [
-  { name = "GONS authors" },
+  { name = "Xuan Ha Nguyen", email = "xuan.h.nguyen@ucdconnect.ie" },
+  { name = "Kim-Hung Le", email = "hunglk@uit.edu.vn" },
+  { name = "Nhien-An Le-Khac", email = "an.lekhac@ucd.ie" },
 ]
 # Non-deep dependencies ONLY. No torch / no GPU. CPU-only, classical ML stack.
 dependencies = [
@@ -28,6 +30,9 @@ dev = [
   "pytest>=8.3,<9",
   "ruff>=0.6,<1",
 ]
+
+[project.urls]
+Repository = "https://github.com/troisang1/GONS"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gons"]

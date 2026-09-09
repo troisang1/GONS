@@ -1,5 +1,12 @@
-# GENERATED config record (do not hand-edit). Authoritative source:
-# gons_configs.py -> make_gons_tuned_cfg (per-dataset TUNED grid cell). Reproduce via run_gons_main.py / run_gons_ablation.py.
+# GENERATED record (do not hand-edit). Regenerate with: python export_configs.py
+# Source: gons_configs.py -> make_gons_tuned_cfg (per-dataset TUNED grid cell).
+#
+# The per-dataset-TUNED comparison arm for nbaiot, at seed 42. Reproduce with:
+#   python run_gons_main.py --arm tuned --datasets nbaiot
+#
+# This is NOT the ablation base -- the shipped ablation is on the FIXED config.
+# `map_gamma` here is the 'knn50' bandwidth rule (the tuned arm selects the
+# rule as well as the grid cell), resolved on this dataset+seed's base split.
 task: fscil
 experiment_name: tuned_nbaiot_s42
 method: gons
@@ -19,14 +26,14 @@ model:
   seed: 42
   map_kind: rff
   map_kernel: rbf
-  map_gamma: -1.0
+  map_gamma: 0.011228215405728192
   map_n_components: 512
   d_proj_max: 32
   residual_handling: drop
   energy_temperature: 1.0
   enable_contrastive_rff: false
-  score_support_penalty_alpha: 0.0
-  score_support_penalty: false
+  score_support_penalty_alpha: 0.2
+  score_support_penalty: true
   score_support_penalty_fn: log
   enable_ncdr_classification: false
   ncdr_threshold: 0.85
